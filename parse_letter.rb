@@ -4,25 +4,30 @@ require 'nokogiri'
 @grid_size = 24.0
 
 def read_mapping
+    # p IO.read @filename
     IO.read @filename
 end
 
 def parse_mapping
-    read_mapping.scan /.*_(?<number>\d*),(?<char>.*)/
+    read_mapping.scan /.*_(?<number>\d*),(?<char>.*)\n/
 end
 
 def open_xml
     characters = parse_mapping
+    # p characters
     mapping_pairs = []
     characters.each do |character|
         # p character
         xml_filename = /.*inkml/.match(@filename).to_s + character[0] + ".inkml"
         xml = File.open xml_filename
+        # p xml
         doc = Nokogiri::XML xml
-        trace = doc.css('trace').text.scan(/(\-?\d*) (\-?\d*),/).map { |elem| [elem[0].to_i, elem[1].to_i] }
+        trace = doc.css('trace').children.to_s.scan(/(\-?\d*.\d*) (\-?\d*.\d*),/).map { |elem| [elem[0].to_f, elem[1].to_f] }
+        # p doc.css('trace').children.to_s
         mapping_pairs << [character[1], trace]
         xml.close
     end
+    # p mapping_pairs
     mapping_pairs
 end
 
@@ -136,8 +141,8 @@ def write_traces
 
     trace_pairs.each_with_index do |pair, index|
         dir = "parsed/" + filename + "/"
-        Dir.mkdir(dir) unless Dir.exist?(dir)
-        file = File.open("parsed/" + filename + "/" + index.to_s + ".txt", "w")
+        # Dir.mkdir(dir) unless Dir.exist?(dir)
+        file = File.open("parsed/" + filename + "_" + index.to_s + ".txt", "w")
 
         file.write pair[0]
         file.write "\n"
